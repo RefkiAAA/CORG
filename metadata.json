@@ -1,0 +1,6 @@
+{
+  "name": "Chart Builder – Struktur Organisasi Swimlane",
+  "description": "Aplikasi pembuat diagram struktur organisasi model swimlane interaktif dengan kustomisasi jabatan, level, garis hierarki, dan ekspor lengkap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

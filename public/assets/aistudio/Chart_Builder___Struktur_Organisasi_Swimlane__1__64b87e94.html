@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chart Builder – Struktur Organisasi Swimlane</title>
+<style>
+:root{--bg:#f4f3ee;--pn:#fff;--tx:#222;--mu:#6b6a64;--bd:#d8d6cc;--ac:#0F6E56;--cv:#e9e8e1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1e1e1c;--pn:#2a2a27;--tx:#eceae2;--mu:#a3a198;--bd:#45443f;--ac:#3fbf9a;--cv:#171715}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:13px/1.4 system-ui,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:var(--pn);border-bottom:1px solid var(--bd)}
+h1{font-size:14px;margin:0 8px 0 0}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:5px 9px}
+button{cursor:pointer}button:hover{border-color:var(--ac)}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.dg{color:#c0392b}.sep{width:1px;height:22px;background:var(--bd)}
+header details{position:relative}summary{list-style:none;cursor:pointer}header summary{border:1px solid var(--bd);border-radius:6px;padding:5px 9px;background:var(--pn)}
+header details div{position:absolute;z-index:9;top:32px;left:0;background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:4px;display:flex;flex-direction:column;min-width:200px}
+header details div button{border:0;text-align:left}
+main{flex:1;display:flex;min-height:0;position:relative}
+#cv{flex:1;min-width:0;background:var(--cv);touch-action:none;cursor:grab}
+#mm{position:absolute;left:8px;bottom:8px;width:160px;height:110px;background:var(--pn);border:1px solid var(--bd);border-radius:6px;opacity:.95;cursor:pointer}
+aside{width:270px;background:var(--pn);border-left:1px solid var(--bd);padding:10px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+aside label{display:flex;flex-direction:column;gap:3px;color:var(--mu);font-size:12px}
+aside label.ck{flex-direction:row;align-items:center;gap:6px}aside label.ck input{width:auto}
+aside input,aside textarea,aside select{width:100%}
+aside h3{margin:0;font-size:13px}.row{display:flex;gap:5px;flex-wrap:wrap}
+.sec{border:1px solid var(--bd);border-radius:8px;padding:6px 8px}.sec summary{font-weight:600}.sec>*:not(summary){margin-top:6px}
+.sec div.b{display:flex;flex-direction:column;gap:6px}
+table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid var(--bd);padding:2px 4px;text-align:center}td:first-child,th:first-child{text-align:left}
+.sw{width:24px;height:24px;padding:0;border-radius:50%}.sw.on{outline:2px solid var(--ac);outline-offset:1px}
+.mu{color:var(--mu);font-size:12px}.it{display:block;width:100%;text-align:left;margin-top:3px}
+footer{display:flex;gap:4px;padding:6px 8px;background:var(--pn);border-top:1px solid var(--bd);overflow-x:auto;align-items:center}
+.tab{padding:4px 12px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;white-space:nowrap}.tab.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+#toast{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;display:none;z-index:99;max-width:90%}
+#xp{display:none;position:absolute;top:10px;right:10px}
+body.pres header,body.pres aside,body.pres footer,body.pres #mm{display:none}body.pres #xp{display:block}body.ro .ed,body.ro aside{display:none}
+@media(max-width:700px){main{flex-direction:column}aside{width:100%;max-height:38%;border-left:0;border-top:1px solid var(--bd)}}
+</style></head><body>
+<header>
+<h1>Chart Builder</h1>
+<button data-a="tool-select" id="tSel" class="on ed" title="Pilih, geser. Shift+seret area kosong = seleksi kotak">Pilih</button>
+<button class="ed" data-a="tool-link" id="tLink" title="Klik kartu asal lalu kartu tujuan">Hubungkan</button>
+<button class="ed" data-a="addcard">+ Kartu</button><button class="ed" data-a="addlane">+ Lane</button><details class="ed"><summary>+ Elemen ▾</summary><div><button data-a="i-text">Kotak teks</button><button data-a="i-frame">Bingkai pengelompok</button><button data-a="i-legend">Legenda</button></div></details><button class="ed" data-a="tidy" title="Susun ulang sekali jalan">Rapikan</button><button class="ed" id="tAuto" data-a="auto" title="Susun otomatis setiap ada perubahan">Auto-rapi</button>
+<span class="sep"></span>
+<button class="ed" data-a="undo" title="Ctrl+Z">↶</button><button class="ed" data-a="redo" title="Ctrl+Y">↷</button>
+<button data-a="zout">−</button><button data-a="zin">+</button><button data-a="fit">Fit</button>
+<button data-a="compact" id="tCmp">Kompak</button><button data-a="pres">Presentasi</button>
+<input id="q" type="search" placeholder="Cari jabatan/nama/level…" style="width:160px">
+<span class="sep"></span>
+<button class="ed" data-a="import">Impor</button>
+<details><summary>Ekspor ▾</summary><div>
+<button data-a="x-drawio">Draw.io (semua halaman)</button><button data-a="x-json">JSON backup (proyek)</button>
+<button data-a="x-csv">CSV data (halaman ini)</button><button data-a="x-rep">Laporan struktur (CSV, semua halaman)</button><button data-a="x-tpl">Template CSV impor</button>
+<button data-a="x-png">PNG (halaman ini)</button><button data-a="x-svg">SVG (halaman ini)</button><button data-a="x-print">PDF / Cetak (semua halaman)</button></div></details>
+<input id="file" type="file" accept=".drawio,.xml,.json,.csv,.xlsx,.xls" hidden><span id="sync" class="mu"></span>
+</header>
+<main><svg id="cv"></svg><svg id="mm"></svg><button id="xp" data-a="pres">Keluar presentasi</button><aside id="pn"></aside></main>
+<footer id="tabs"></footer><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),svg=$('#cv'),mm=$('#mm'),uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PRE=[{f:'#E1F5EE',s:'#0F6E56',t:'#085041'},{f:'#E6F1FB',s:'#185FA5',t:'#0C447C'},{f:'#FAEEDA',s:'#BA7517',t:'#633806'},{f:'#EEEDFE',s:'#534AB7',t:'#3C3489'},{f:'#FAECE7',s:'#993C1D',t:'#712B13'},{f:'#F1EFE8',s:'#5F5E5A',t:'#2C2C2A'}];
+const KP='[level jabatan]',CW=250,K0={f:'#FFFFFF',s:'#5F5E5A',t:'#222222'},STC={terisi:'#1D9E75',kosong:'#E24B4A',rekrut:'#EF9F27'};
+const LVS={S:{1:'Junior Staff',2:'Staff',3:'Senior Staff',4:'Supervisor',5:'Manager',6:'Manager',7:'General Manager',8:'General Manager',9:'Direktur',10:'Direktur'},I:{1:'Individual Contributor',2:'Individual Contributor',3:'Individual Contributor',4:'Jr. Specialist',5:'Specialist',6:'Specialist',7:'Sr. Specialist',8:'Sr. Specialist',9:'Principal',10:'Sr. Principal'}};
+const lvKey=c=>c.lv?(c.tr||'S')+c.lv:'',lvText=c=>c.lv&&LVS[c.tr||'S']&&LVS[c.tr||'S'][c.lv]?LVS[c.tr||'S'][c.lv]:'',lvJ=c=>c.lv?'L'+c.lv:'';
+function parseLv(t){t=String(t||'').trim();if(!t||t==KP||t=='[kode unik]')return{lv:0,tr:''};const m=t.match(/L\s*(\d{1,2})/i)||t.match(/^(\d{1,2})$/);if(!m){for(const tk of ['S','I'])for(let n=1;n<=10;n++)if(LVS[tk][n].toLowerCase()==t.toLowerCase())return{lv:n,tr:tk};return{lv:0,tr:''}}const n=+m[1];if(n<1||n>10)return{lv:0,tr:''};return{lv:n,tr:/specialist|principal|individual|contributor|\bIC\b/i.test(t)?'I':'S'}}
+const lvOpts=v=>'<option value="">– Pilih level –</option>'+[['S','Jalur Struktural'],['I','Jalur Individual Contributor']].map(([tk,lb])=>`<optgroup label="${lb}">`+Object.entries(LVS[tk]).map(([n,nm])=>`<option value="${tk}${n}"${v==tk+n?' selected':''}>L${n} ${nm}</option>`).join('')+'</optgroup>').join('');
+const LVL=['Level jabatan, jalur struktural: Junior Staff / Staff / Senior Staff (L1/L2/L3) → Supervisor (L4) → Manager (L5/L6) → General Manager (L7/L8) → Direktur (L9/L10)','Level jabatan, jalur Individual Contributor: Individual Contributor (L1/L2/L3) → Jr. Specialist (L4) → Specialist (L5/L6) → Sr. Specialist (L7/L8) → Principal (L9) → Sr. Principal (L10)'];
+const SHAPES=[['box','Kotak'],['box-d','Kotak putus-putus'],['box-2','Kotak garis ganda'],['para','Jajargenjang'],['para-d','Jajargenjang putus-putus'],['para-2','Jajargenjang garis ganda']];
+const BUILT=[{n:'Staf (jajargenjang, tanpa foto)',c:PRE[5],jab:'Staf',names:['Nama 1','Nama 2','Nama 3','Nama 4'],st:'terisi',shape:'para',np:true,cols:2},{n:'Kosong (vacant)',c:PRE[5],names:['(Posisi kosong)'],st:'kosong'},{n:'Pejabat sementara',c:PRE[2],names:['Plt. …'],st:'terisi'}];
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3500)};
+function demo(){const L=['Direktur','Head','Manager','Supervisor'].map(n=>({id:uid(),name:n,w:320}));
+ const C=(l,y,jab,n,st)=>({id:uid(),l,dx:35,y,jab,names:[n],lv:0,tr:'',c:K0,photo:'',st});
+ const a=C(0,80,'Chief of Group Business Services','Nama Direktur','terisi'),b=C(1,260,'Head of Finance','Nama Head','terisi'),c=C(2,440,'Finance Manager','Nama Manager','terisi'),d=C(3,620,'Finance Supervisor','Nama Supervisor','rekrut'),e=C(2,620,'Accounting Manager','(Posisi kosong)','kosong');
+ const E=(x,y)=>({id:uid(),from:x.id,to:y.id,dash:false});
+ return{demo:1,cur:0,tpl:[],pages:[{id:uid(),name:'Halaman 1',H:900,lanes:L,cards:[a,b,c,d,e],edges:[E(a,b),E(b,c),E(c,d),E(b,e)]}]}}
+let S;try{S=JSON.parse(localStorage.getItem('cb1'))}catch(e){}
+if(!S||!S.pages)S=demo();S.tpl??=[];
+let SN=[];try{SN=JSON.parse(localStorage.getItem('cb1s'))||[]}catch(e){}
+let sel=null,ms=new Set(),tool='select',pend=null,view={x:20,y:20,k:.8},drag=null,pan=null,marq=null,gd=[],hist=[],fut=[],last=JSON.stringify(S),q='',pres=false,CL=null,vres=null,dtxt='';
+let drag2=null,drag3=null,DB=null,AS=null,canW=true,wr=undefined,ro=false,saved={},RP={},RM=null,gotM=false,gotP=false,st2=null;
+const P=()=>S.pages[S.cur],laneX=(p,i)=>p.lanes.slice(0,i).reduce((s,l)=>s+l.w,0);
+const ch=(c,f)=>{const n=(c.names||[]).length;if(S.compact&&!f)return Math.max(42,26+16*n);const R=Math.ceil(n/(c.np&&c.cols==2?2:1));return Math.max(c.np?76:98,54+22*(R+1))};
+const abs=(p,c)=>({x:laneX(p,Math.min(c.l,p.lanes.length-1))+c.dx,y:c.y});
+const pageH=p=>Math.max(p.H||600,...p.cards.map(c=>c.y+ch(c)+100),...(p.items||[]).map(i=>i.y+ih(i)+40)),pageW=p=>laneX(p,p.lanes.length);
+const kids=(p,id)=>p.edges.filter(e=>e.from==id).map(e=>e.to);
+const pick=id=>{sel={t:'c',id};ms=new Set([id])};
+function setAbs(p,c,x,y){let l=0;const cx=x+CW/2;p.lanes.forEach((_,i)=>{if(cx>=laneX(p,i))l=i});c.l=l;c.dx=x-laneX(p,l);c.y=y}
+function hidden(p){const h=new Set(),go=id=>kids(p,id).forEach(k=>{if(!h.has(k)){h.add(k);go(k)}});p.cards.filter(c=>c.col).forEach(c=>go(c.id));return h}
+function commit(){const pp=P();if(pp&&pp.auto&&!ro)tidy(pp);const cur=JSON.stringify(S);if(cur!==last){hist.push(last);if(hist.length>80)hist.shift();fut=[];last=cur;delete S.demo;try{localStorage.setItem('cb1',cur)}catch(e){}sched()}}
+function restore(j){S=JSON.parse(j);S.tpl??=[];last=j;sel=null;ms=new Set();try{localStorage.setItem('cb1',j)}catch(e){}sched();all()}
+const undo=()=>{if(hist.length){fut.push(last);restore(hist.pop())}},redo=()=>{if(fut.length){hist.push(last);restore(fut.pop())}};
+const wrap=(t,n,m=3)=>{const w=String(t).split(/\s+/),o=[];let l='';w.forEach(x=>{if((l+' '+x).trim().length>n&&l){o.push(l);l=x}else l=(l+' '+x).trim()});if(l)o.push(l);return o.slice(0,m)};
+const SK=20,isPara=c=>/^para/.test(c.shape||''),ps=c=>isPara(c)?SK/2:0,dbl=c=>/-2$/.test(c.shape||'');
+function outline(c,W,h){const k=K0,d=/-d$/.test(c.shape||'')?' stroke-dasharray="6 4"':'';let o=`<rect width="${W}" height="${h}" fill="none" stroke="${k.s}" stroke-width="1.2"${d}/>`;if(dbl(c))o+=`<rect x="3.5" y="3.5" width="${W-7}" height="${h-7}" fill="none" stroke="${k.s}" stroke-width="1.2"/>`;return o}
+function cardSVG(p,c,ui){const{x,y}=abs(p,c),h=ch(c),k=K0,n=c.names||[],para=isPara(c),W=para?CW-SK:CW,np=!!c.np&&!S.compact,cols=np&&c.cols==2?2:1;
+ const X=(a,b)=>para?a+SK*(1-b/h):a,T=(a,b,t,at)=>`<text x="${X(a,b).toFixed(1)}" y="${b}" text-anchor="middle" ${at}>${esc(t)}</text>`,ln=(a,b,c2,d)=>`<line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="${k.s}"/>`;
+ let o=`<g data-c="${c.id}" transform="translate(${x},${y})">`,tx='';
+ o+=(para?`<g transform="translate(${SK},0) skewX(${(-Math.atan(SK/h)*180/Math.PI).toFixed(3)})">`:'<g>')+`<rect width="${W}" height="${h}" fill="${k.f}"/>`;
+ if(S.compact)tx+=T(W/2,16,c.jab.length>34?c.jab.slice(0,33)+'…':c.jab,`font-size="11" font-weight="700" fill="${k.t}"`)+n.map((t,i)=>T(W/2,32+16*i,t,`font-size="11" fill="${k.t}"`)).join('');
+ else{const x0=np?0:74,cw=W-x0,R=Math.ceil(n.length/cols),mid=x0+cw/2;
+  if(!np){o+=c.photo?`<image href="${c.photo}" width="74" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:`<rect width="74" height="${h}" fill="#FFFFFF"/>`;if(!c.photo)tx+=T(37,h/2+4,'Foto','font-size="10" fill="#9A9990"');o+=ln(74,0,74,h)}
+  for(let i=0;i<=R;i++)o+=ln(x0,54+22*i,W,54+22*i);
+  if(cols==2)o+=ln(mid,54,mid,54+22*R);
+  const ls=wrap(c.jab,np?36:24),y0=27-(ls.length-1)*7;ls.forEach((t,i)=>tx+=T(mid,y0+i*14+4,t,`font-size="11" font-weight="700" fill="${k.t}"`));
+  n.forEach((t,i)=>tx+=T(x0+cw/cols*(i%cols+.5),54+22*Math.floor(i/cols)+15,t,`font-size="${cols==2?10.5:11}" fill="${k.t}"`));
+  tx+=T(mid,54+22*R+15,lvText(c)||KP,lvText(c)?`font-size="10.5" font-weight="700" fill="${k.t}"`:'font-size="10" fill="#9A9990" font-style="italic"');
+  if(c.grade){const gx=(para?SK:0)+2,gl=String(c.grade).length;tx+=`<rect x="${gx}" y="2" width="${14+gl*6}" height="14" fill="${k.s}"/><text x="${gx+7+gl*3}" y="12" text-anchor="middle" font-size="9" fill="#fff">G${esc(c.grade)}</text>`}}
+ o+=outline(c,W,h)+'</g>'+tx;
+ if(STC[c.st])o+=`<circle cx="${CW-9}" cy="9" r="5" fill="${STC[c.st]}" stroke="#fff"/>`;
+ if(c.col){const sn=new Set(),go=id=>kids(p,id).forEach(q=>{if(!sn.has(q)){sn.add(q);go(q)}});go(c.id);const cm=W/2+(para?SK/2:0);o+=`<rect x="${cm-18}" y="${h-1}" width="36" height="16" rx="8" fill="#fff" stroke="${k.s}"/><text x="${cm}" y="${h+11}" text-anchor="middle" font-size="10" fill="#222">+${sn.size}</text>`}
+ if(ui){if(ms.has(c.id))o+=`<rect x="-3" y="-3" width="${CW+6}" height="${h+6}" fill="none" stroke="#2563eb" stroke-width="3"/>`;
+  if(pend==c.id)o+=`<rect x="-3" y="-3" width="${CW+6}" height="${h+6}" fill="none" stroke="#e67e22" stroke-width="3" stroke-dasharray="6 4"/>`;
+  if(c.lock||(p.lanes[c.l]||{}).lock)o+=`<text x="${W-4}" y="${h-4}" text-anchor="end" font-size="11">🔒</text>`;
+  if(q&&[c.jab,lvText(c),...n].join(' ').toLowerCase().includes(q))o+=`<rect x="-5" y="-5" width="${CW+10}" height="${h+10}" fill="none" stroke="#f1c40f" stroke-width="4"/>`}
+ return o+'</g>'}
+function edgeG(p,e,f){const a=p.cards.find(c=>c.id==e.from),b=p.cards.find(c=>c.id==e.to);if(!a||!b)return null;
+ const A=abs(p,a),B=abs(p,b),n=p.lanes.length-1,la=Math.min(a.l,n),lb=Math.min(b.l,n),R=lb>la,Lf=lb<la,sx=R?A.x+CW-ps(a):A.x+ps(a),tx=Lf?B.x+CW-ps(b):B.x+ps(b),sy=A.y+ch(a,f)/2,ty=B.y+ch(b,f)/2,lx=i=>laneX(p,i),lw=i=>p.lanes[i].w;let tr;
+ if(la==lb){const m=Math.min(A.x,B.x)-lx(la);tr=lx(la)+Math.max(6,m/2)}
+ else if((p.br||'parent')=='parent'){if(R){const m=lx(la)+lw(la)-(A.x+CW);tr=A.x+CW+Math.max(6,m/2)}else{const m=A.x-lx(la);tr=A.x-Math.max(6,m/2)}}
+ else{const sib=p.edges.filter(g=>g.from==a.id).map(g=>p.cards.find(c=>c.id==g.to)).filter(c=>c&&Math.min(c.l,n)==lb).map(c=>abs(p,c).x);
+  if(R){const m=Math.min(B.x,...sib)-lx(lb);tr=lx(lb)+Math.max(6,m/2)}else{const mx=Math.max(B.x,...sib),m=lx(lb)+lw(lb)-(mx+CW);tr=mx+CW+Math.max(6,m/2)}}
+ return{sx,sy,tx,ty,tr}}
+function edgeD(p,e){const g=edgeG(p,e);if(!g)return'';const{sx,sy,tx,ty,tr}=g,ls=p.ls||'elbow';
+ if(ls=='straight')return`M${sx},${sy}L${tx},${ty}`;if(ls=='curve')return`M${sx},${sy}C${tr},${sy} ${tr},${ty} ${tx},${ty}`;return`M${sx},${sy}H${tr}V${ty}H${tx}`}
+function inner(p,ui){const H=pageH(p),W=pageW(p),hid=hidden(p),hc=p.hc||'#E8E7E0';let o=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5F5E5A"/></marker><pattern id="gr" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#c9c9c9" stroke-width=".6"/></pattern></defs>`,x=0;
+ p.lanes.forEach((l,i)=>{o+=`<g data-l="${l.id}"><rect x="${x}" width="${l.w}" height="${H}" fill="#E6E6E6" stroke="#9A9990"/><rect x="${x}" width="${l.w}" height="40" fill="#E6E6E6" stroke="#9A9990"/><text x="${x+l.w/2}" y="25" text-anchor="middle" font-size="13" font-weight="700" fill="#222">${esc(l.name)}</text>${l.lock&&ui?`<text x="${x+l.w-6}" y="16" text-anchor="end" font-size="10">🔒</text>`:''}${ui&&sel&&sel.id==l.id?`<rect x="${x}" width="${l.w}" height="${H}" fill="none" stroke="#2563eb" stroke-width="3"/>`:''}</g>`;x+=l.w});
+ if(ui&&p.grid)o+=`<rect y="40" width="${W}" height="${H-40}" fill="url(#gr)" pointer-events="none"/>`;
+ (p.items||[]).filter(i=>i.t=='frame').forEach(i=>o+=itemSVG(p,i,ui));
+ p.edges.forEach(e=>{if(hid.has(e.from)||hid.has(e.to))return;const d=edgeD(p,e);if(d)o+=`<path d="${d}" fill="none" stroke="#5F5E5A" stroke-width="1.6"${e.dash?' stroke-dasharray="8 6"':''}${p.arrow?' marker-end="url(#ar)"':''}/>${ui?`<path data-e="${e.id}" d="${d}" fill="none" stroke="${sel&&sel.id==e.id?'#2563eb':'transparent'}" stroke-width="${sel&&sel.id==e.id?3:12}" style="cursor:pointer"/>`:''}`});
+ p.cards.forEach(c=>{if(!hid.has(c.id))o+=cardSVG(p,c,ui)});(p.items||[]).filter(i=>i.t!='frame').forEach(i=>o+=itemSVG(p,i,ui));if(p.title)o+=`<text x="8" y="-18" font-size="20" font-weight="700" fill="#222">${esc(p.title)}</text>`;return o}
+const itLines=it=>{const n=Math.max(4,Math.floor((it.w||200)/((it.fs||12)*.58)));return String(it.text||'').split('\n').flatMap(l=>l.trim()?wrap(l,n,8):[''])};
+const SHD=['','Level jabatan tidak sesuai dengan lane','Posisi boleh ada, boleh tidak','Ada secara fungsional, bukan bagian dari struktur organisasi','Ada secara fungsional, bukan bagian dari struktur organisasi; level jabatan tidak sesuai dengan lane',''];
+const lgRows=it=>{const r=[];if(it.st!==false)[['terisi','Terisi'],['kosong','Kosong'],['rekrut','Rekrutmen']].forEach(x=>r.push({dot:STC[x[0]],t:x[1]}));if(it.ish!==false)SHAPES.forEach((sp,i)=>{const t=(it.sh||SHD)[i];if(t)r.push({shp:sp[0],t})});if(it.slv!==false)LVL.forEach(t=>r.push({lvl:1,t}));return r};
+const lgLay=it=>{let y=32;return lgRows(it).map(r=>{const L=wrap(r.t,Math.max(8,Math.floor(((it.w||200)-(r.lvl?26:48))/5.6)),r.lvl?6:4),h=Math.max(22,L.length*13+8),o={...r,L,y,h};y+=h;return o})};
+const ih=it=>it.t=='frame'?(it.h||160):it.t=='legend'?38+lgLay(it).reduce((a,r)=>a+r.h,0):Math.round(itLines(it).length*(it.fs||12)*1.35+10);
+const shpIcon=(sh,cy)=>{const pa=/^para/.test(sh),d=/-d$/.test(sh)?' stroke-dasharray="3 2"':'',o=pa?`16,${cy-7} 33,${cy-7} 28,${cy+7} 11,${cy+7}`:`11,${cy-7} 33,${cy-7} 33,${cy+7} 11,${cy+7}`;let x=`<polygon points="${o}" fill="#FFFFFF" stroke="#5F5E5A"${d}/>`;if(/-2$/.test(sh))x+=`<polygon points="${pa?`18,${cy-4} 30,${cy-4} 26.5,${cy+4} 14.5,${cy+4}`:`14,${cy-4} 30,${cy-4} 30,${cy+4} 14,${cy+4}`}" fill="none" stroke="#5F5E5A"/>`;return x};
+function itemSVG(p,it,ui){const w=it.w||200,h=ih(it),fs=it.fs||12,sl=ui&&sel&&sel.t=='i'&&sel.id==it.id;let o=`<g data-i="${it.id}" transform="translate(${it.x},${it.y})">`;
+ if(it.t=='frame'){const k={f:'none',s:'#8A8980',t:'#444444'};o+=`<rect width="${w}" height="${h}" fill="${k.f}" fill-opacity=".35" pointer-events="none"/><rect width="${w}" height="${h}" fill="none" stroke="${k.s}" stroke-width="2" stroke-dasharray="8 6" pointer-events="none"/><rect width="${w}" height="${h}" fill="none" stroke="#000" stroke-opacity="0" stroke-width="14" pointer-events="stroke"/><text x="10" y="18" font-size="12" font-weight="700" fill="${k.t}">${esc(it.text)}</text>`}
+ else if(it.t=='legend'){o+=`<rect width="${w}" height="${h}" fill="#fff" stroke="#9A9990"/><text x="10" y="19" font-size="12" font-weight="700" fill="#222">Legenda</text>`+lgLay(it).map(r=>{const cy=r.y+r.h/2,ic=r.dot?`<circle cx="22" cy="${cy}" r="5" fill="${r.dot}"/>`:r.lvl?'':shpIcon(r.shp,cy);return ic+r.L.map((t,i)=>`<text x="${r.lvl?11:40}" y="${r.y+(r.h-r.L.length*13)/2+10+i*13}" font-size="11" fill="#222">${esc(t)}</text>`).join('')}).join('')} else o+=`<rect width="${w}" height="${h}" fill="none" pointer-events="all"/>`+itLines(it).map((t,i)=>`<text x="4" y="${fs*1.2+i*fs*1.35}" font-size="${fs}"${it.b?' font-weight="700"':''} fill="#222">${esc(t)}</text>`).join('');
+ if(sl)o+=`<rect width="${w}" height="${h}" fill="none" stroke="#2563eb" stroke-width="2" pointer-events="none"/><rect data-rz="${it.id}" x="${w-8}" y="${h-8}" width="10" height="10" fill="#2563eb" style="cursor:nwse-resize"/>`;
+ return o+'</g>'}
+function addItem(t){const p=P(),r=svg.getBoundingClientRect();p.items??=[];const it={id:uid(),t,x:Math.max(0,snap((r.width/2-view.x)/view.k-100)),y:Math.max(0,snap((r.height/2-view.y)/view.k-60)),w:t=='frame'?400:t=='legend'?560:220,h:t=='frame'?240:0,text:t=='text'?'Teks keterangan':t=='frame'?'Nama divisi':'',fs:12,b:false,k:5,lg:['','','','','',''],st:true};p.items.push(it);sel={t:'i',id:it.id};ms=new Set();commit();all()}
+function chartSVG(p){const W=pageW(p),H=pageH(p),T=p.title?56:0;return`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H+20+T}" viewBox="0 ${-T} ${W} ${H+20+T}" font-family="${p.font||'Arial,sans-serif'}"><rect y="${-T}" width="${W}" height="${H+20+T}" fill="#fff"/>${inner(p,false)}</svg>`}
+function render(){const p=P();let x='';gd.forEach(g=>x+=g.x!=null?`<line x1="${g.x}" x2="${g.x}" y1="0" y2="${pageH(p)}" stroke="#e84393" stroke-dasharray="5 4"/>`:`<line y1="${g.y}" y2="${g.y}" x1="0" x2="${pageW(p)}" stroke="#e84393" stroke-dasharray="5 4"/>`);
+ if(marq)x+=`<rect x="${Math.min(marq.x,marq.x2)}" y="${Math.min(marq.y,marq.y2)}" width="${Math.abs(marq.x2-marq.x)}" height="${Math.abs(marq.y2-marq.y)}" fill="#2563eb22" stroke="#2563eb"/>`;
+ svg.innerHTML=`<g font-family="${p.font||'Arial,sans-serif'}" transform="translate(${view.x},${view.y}) scale(${view.k})">${inner(p,true)}${x}</g>`;
+ $('#tSel').classList.toggle('on',tool=='select');$('#tLink').classList.toggle('on',tool=='link');$('#tCmp').classList.toggle('on',!!S.compact);$('#tAuto').classList.toggle('on',!!p.auto);svg.style.cursor=tool=='link'?'crosshair':'grab';minimap()}
+function minimap(){const p=P(),W=pageW(p),H=pageH(p),r=svg.getBoundingClientRect();let o='',x=0;p.lanes.forEach(l=>{o+=`<rect x="${x}" width="${l.w}" height="${H}" fill="none" stroke="#9A9990" stroke-width="3"/>`;x+=l.w});
+ p.cards.forEach(c=>{const a=abs(p,c);o+=`<rect x="${a.x}" y="${a.y}" width="${CW}" height="${ch(c)}" fill="#5F5E5A"/>`});
+ mm.setAttribute('viewBox',`0 0 ${W} ${H}`);mm.innerHTML=o+`<rect x="${-view.x/view.k}" y="${-view.y/view.k}" width="${r.width/view.k}" height="${r.height/view.k}" fill="#e74c3c22" stroke="#e74c3c" stroke-width="4"/>`}
+mm.addEventListener('pointerdown',e=>{const jump=e=>{const p=P(),W=pageW(p),H=pageH(p),b=mm.getBoundingClientRect(),s=Math.min(b.width/W,b.height/H),wx=(e.clientX-b.left-(b.width-W*s)/2)/s,wy=(e.clientY-b.top-(b.height-H*s)/2)/s,r=svg.getBoundingClientRect();view.x=r.width/2-wx*view.k;view.y=r.height/2-wy*view.k;render()};jump(e);mm.setPointerCapture(e.pointerId);mm.onpointermove=ev=>{if(ev.buttons)jump(ev)}});
+function tabs(){$('#tabs').innerHTML=S.pages.map((p,i)=>`<span class="tab${i==S.cur?' on':''}" data-t="${i}">${esc(p.name)}</span>`).join('')+'<button class="ed" data-a="addpage">+ Halaman</button><button class="ed" data-a="duppage">Duplikat</button><button class="ed dg" data-a="delpage">Hapus halaman</button><span class="mu ed" style="margin-left:auto;white-space:nowrap">Tersimpan otomatis · klik 2× tab untuk ganti nama</span>'}
+const swatches=c=>PRE.map((k,i)=>`<button class="sw${c&&c.f==k.f?' on':''}" data-col="${i}" style="background:${k.f};border-color:${k.s}"></button>`).join('');
+const opt=(v,l)=>l.map(([k,t])=>`<option value="${k}"${v==k?' selected':''}>${t}</option>`).join(''),sec=(t,h,o)=>`<details class="sec"${o?' open':''}><summary>${t}</summary><div class="b">${h}</div></details>`;
+const ck=(k,v,t)=>`<label class="ck"><input type="checkbox" data-k="${k}"${v?' checked':''}> ${t}</label>`;
+function stats(p){const t=[0,0,0,0],nf=p.cards.filter(isPara).length,rows=p.lanes.map((l,i)=>{const cs=p.cards.filter(c=>c.l==i&&!isPara(c)),v=[cs.length,...['terisi','kosong','rekrut'].map(s=>cs.filter(c=>c.st==s).length)];v.forEach((x,j)=>t[j]+=x);return`<tr><td>${esc(l.name)}</td>${v.map(x=>`<td>${x}</td>`).join('')}</tr>`}).join('');return`<table><tr><th>Lane</th><th>Total</th><th>Isi</th><th>Kosong</th><th>Rekrut</th></tr>${rows}<tr><th>Total</th>${t.map(x=>`<th>${x}</th>`).join('')}</tr></table>`+(nf?`<span class="mu">Tidak termasuk ${nf} kartu jajargenjang (bukan bagian struktur organisasi).</span>`:'')}
+function validate(p){const r=[],byK={};p.cards.forEach(c=>{if(!c.names.some(x=>x.trim())&&c.st!='kosong')r.push([c.id,'Tanpa nama: '+c.jab]);if(c.l>0&&!isPara(c)&&!p.edges.some(e=>e.to==c.id))r.push([c.id,'Tanpa atasan: '+c.jab])});
+ 
+ const col={};let cyc=null;const dfs=id=>{col[id]=1;for(const k of kids(p,id)){if(col[k]==1){cyc=k;return}if(!col[k])dfs(k);if(cyc)return}col[id]=2};p.cards.forEach(c=>{if(!col[c.id]&&!cyc)dfs(c.id)});if(cyc)r.push([cyc,'Garis melingkar terdeteksi']);return r}
+function diff(i){const o={};JSON.parse(SN[i].d).forEach(p=>p.cards.forEach(c=>o[c.id]=JSON.stringify(c)));let a=0,m=0;const cur={};S.pages.forEach(p=>p.cards.forEach(c=>{cur[c.id]=1;if(!o[c.id])a++;else if(o[c.id]!=JSON.stringify(c))m++}));return`Sejak versi "${SN[i].name}": +${a} kartu baru, −${Object.keys(o).filter(k=>!cur[k]).length} kartu dihapus, ${m} berubah`}
+function panel(){const p=P(),el=$('#pn');let h='';
+ const cd=sel&&sel.t=='c'&&p.cards.find(c=>c.id==sel.id),ln=sel&&sel.t=='l'&&p.lanes.find(l=>l.id==sel.id),eg=sel&&sel.t=='e'&&p.edges.find(e=>e.id==sel.id),it=sel&&sel.t=='i'&&(p.items||[]).find(i=>i.id==sel.id);
+ if(ms.size>1)h=`<h3>${ms.size} kartu dipilih</h3><div class="row"><button data-a="al-l">Rata kiri</button><button data-a="al-c">Tengah lane</button><button data-a="al-t">Rata atas</button><button data-a="al-d">Jarak vertikal sama</button></div><label>Bentuk<select data-k="mshape"><option value="">— pilih untuk semua —</option>${opt('',SHAPES)}</select></label><label class="ck"><input type="checkbox" data-k="mnp"> Jadikan staf (tanpa foto)</label><div class="row"><button data-a="copy">Salin</button><button data-a="lockms">Kunci/Buka</button><button data-a="del" class="dg">Hapus</button></div><span class="mu">Ctrl+C / Ctrl+V juga bisa menempel ke halaman lain.</span>`;
+ else if(cd)h=`<h3>Kartu jabatan</h3><label>Jabatan<input data-k="jab" value="${esc(cd.jab)}"></label><label>Bentuk kartu<select data-k="shape">${opt(cd.shape||'box',SHAPES)}</select></label>${ck('np',cd.np,'Staf: tanpa foto, banyak nama')}${cd.np?`<label>Kolom nama<select data-k="cols">${opt(cd.cols||1,[[1,'1 kolom'],[2,'2 kolom']])}</select></label>`:''}<label>Nama (satu per baris${cd.np?', boleh banyak':''})<textarea data-k="names" rows="${cd.np?7:3}">${esc(cd.names.join('\n'))}</textarea></label><label>Level jabatan<select data-k="lv">${lvOpts(lvKey(cd))}</select></label>
+ <div class="row"><label style="flex:1">Status<select data-k="st">${opt(cd.st||'',[['','–'],['terisi','Terisi'],['kosong','Kosong'],['rekrut','Rekrutmen']])}</select></label><label style="flex:1">Grade<input data-k="grade" value="${esc(cd.grade||'')}"></label></div>
+ <label>Catatan (tidak dicetak)<textarea data-k="note" rows="2">${esc(cd.note||'')}</textarea></label>${ck('lock',cd.lock,'Kunci kartu (tidak bisa digeser)')}
+ <div class="row">${cd.np?'':'<button data-a="photo">Foto…</button>'}${cd.photo&&!cd.np?'<button data-a="nophoto">Hapus foto</button>':''}<button data-a="child">+ Bawahan</button>${kids(p,cd.id).length?`<button data-a="fold">${cd.col?'Buka':'Lipat'} bawahan</button>`:''}</div><div class="row"><button data-a="dup">Duplikat</button><button data-a="copy">Salin</button><button data-a="savetpl">Simpan template</button><button data-a="del" class="dg">Hapus</button></div>`;
+ else if(ln)h=`<h3>Lane</h3><label>Nama<input data-k="lname" value="${esc(ln.name)}"></label><label>Lebar (px)<input data-k="lw" type="number" min="260" step="10" value="${ln.w}"></label>${ck('llock',ln.lock,'Kunci lane (kartu di dalamnya tidak bisa digeser)')}<div class="row"><button data-a="lleft">Sisip kiri</button><button data-a="lright">Sisip kanan</button></div><div class="row"><button data-a="lmvl">◀ Geser</button><button data-a="lmvr">Geser ▶</button><button data-a="del" class="dg">Hapus lane</button></div>`;
+ else if(it)h=`<h3>${it.t=='frame'?'Bingkai':it.t=='legend'?'Legenda':'Kotak teks'}</h3>`+(it.t=='legend'?`${ck('ist',it.st!==false,'Tampilkan legenda status')}${ck('ish',it.ish!==false,'Tampilkan arti bentuk kartu')}<span class="mu">Arti bentuk kartu (kosongkan jika tidak dipakai):</span>${SHAPES.map((sp,i)=>`<label>${sp[1]}<input data-k="sh${i}" value="${esc((it.sh||SHD)[i]||'')}"></label>`).join('')}${ck('slv',it.slv!==false,'Tampilkan jenjang level jabatan')}`:`<label>${it.t=='frame'?'Label':'Teks'}<textarea data-k="itext" rows="3">${esc(it.text)}</textarea></label>`)
+ +(it.t=='text'?`<label>Ukuran huruf<select data-k="ifs">${opt(it.fs||12,[[11,'11'],[12,'12'],[14,'14'],[18,'18'],[24,'24']])}</select></label>${ck('ib',it.b,'Tebal')}`:'')
+ +(it.t=='frame'?`<label>Tinggi<input data-k="ih" type="number" step="10" value="${it.h||160}"></label>`:'')
+ +`<label>Lebar<input data-k="iw" type="number" step="10" value="${it.w||200}"></label><div class="row"><button data-a="idup">Duplikat</button><button data-a="del" class="dg">Hapus</button></div><span class="mu">Seret untuk memindah; seret kotak biru di pojok untuk mengubah ukuran.</span>`;
+ else if(eg)h=`<h3>Garis penghubung</h3><div class="row"><button data-a="dash">${eg.dash?'Jadikan solid':'Jadikan putus-putus'}</button><button data-a="del" class="dg">Hapus</button></div>`;
+ else{const tp=[...BUILT,...S.tpl];
+  h=`<h3>Halaman</h3><label>Nama<input data-k="pname" value="${esc(p.name)}"></label><label>Judul chart (tampil di atas dan di hasil ekspor)<input data-k="ptitle" value="${esc(p.title||'')}" placeholder="mis. Struktur Organisasi GBS"></label><label>Tinggi minimum (px)<input data-k="ph" type="number" step="50" value="${p.H}"></label>
+ ${sec('Tampilan',`<label>Gaya garis<select data-k="ls">${opt(p.ls||'elbow',[['elbow','Siku'],['straight','Lurus'],['curve','Melengkung']])}</select></label>${ck('arrow',p.arrow,'Panah di ujung garis')}${ck('auto',p.auto,'Auto-rapi kartu (susun otomatis)')}<label>Titik cabang garis<select data-k="br">${opt(p.br||'parent',[['parent','Di lane atasan'],['child','Di lane bawahan']])}</select></label>${ck('grid',p.grid,'Tampilkan grid')}<label>Font<select data-k="font">${opt(p.font||'Arial,sans-serif',[['Arial,sans-serif','Arial'],['Georgia,serif','Georgia'],['Verdana,sans-serif','Verdana'],['system-ui,sans-serif','Sistem'],['Courier New,monospace','Courier']])}</select></label>`)}
+ ${sec('Laporan struktur',repHTML(p),1)}
+ ${sec('Headcount',stats(p))}
+ ${sec('Validasi struktur',`<button data-a="validate">Cek sekarang</button>${vres?(vres.length?vres.map(r=>`<button class="it" data-go="${r[0]}">⚠ ${esc(r[1])}</button>`).join(''):'<span class="mu">✔ Tidak ada masalah.</span>'):''}`)}
+ ${sec('Template kartu',tp.map((t,i)=>`<div class="row"><button style="flex:1;text-align:left" data-tp="${i}">+ ${esc(t.n)}</button>${i>=BUILT.length?`<button class="dg" data-dt="${i-BUILT.length}">×</button>`:''}</div>`).join('')+'<span class="mu">Pilih kartu lalu "Simpan template" untuk menambah.</span>')}
+ ${sec('Foto massal','<button data-a="bulk">Pilih banyak foto…</button><span class="mu">Nama file dicocokkan dengan nama pemegang jabatan (mis. budi_santoso.jpg atau Budi Santoso.jpg).</span>')}
+ ${sec('Cetak PDF',`<label>Kertas<select data-k="paper">${opt(S.paper||'A3',[['A3','A3'],['A4','A4'],['A2','A2']])}</select></label><label>Orientasi<select data-k="orient">${opt(S.orient||'landscape',[['landscape','Landscape'],['portrait','Portrait']])}</select></label><span class="mu">Menu Ekspor › PDF/Cetak, lalu pilih Simpan sebagai PDF.</span>`)}
+ ${sec('Riwayat versi',`<input id="snn" placeholder="Nama versi, mis. Revisi Okt 2026"><button data-a="snap">Simpan versi</button>${SN.map((s,i)=>`<div class="row"><span style="flex:1">${esc(s.name)}<br><span class="mu">${new Date(s.t).toLocaleString('id-ID')}</span></span><button data-rs="${i}">Pulihkan</button><button data-df="${i}">Banding</button><button class="dg" data-ds="${i}">×</button></div>`).join('')}${dtxt?`<span class="mu">${esc(dtxt)}</span>`:''}`)}
+ <div class="mu">Klik kartu, header lane, atau garis untuk mengedit. Shift+klik = pilih banyak; Shift+seret area kosong = seleksi kotak. Ctrl+scroll = zoom.</div>`}
+ el.innerHTML=h}
+function all(){render();tabs();panel()}
+const toW=e=>{const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k}},snap=v=>Math.round(v/10)*10;
+function link(a,b){const p=P();if(a==b||p.edges.some(e=>e.from==a&&e.to==b))return;p.edges.push({id:uid(),from:a,to:b,dash:false});commit()}
+const locked=(p,c)=>c.lock||(p.lanes[c.l]||{}).lock;
+svg.addEventListener('pointerdown',e=>{const t=e.target.closest('[data-c],[data-e],[data-l],[data-i],[data-rz]'),w=toW(e),p=P();svg.setPointerCapture(e.pointerId);
+ const sp=()=>pan={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};
+ if(pres||ro){const c=t&&t.dataset.c&&p.cards.find(c=>c.id==t.dataset.c);if(c&&kids(p,c.id).length){c.col=!c.col;render()}else sp();return}
+ if(t&&t.dataset.rz){const it=(p.items||[]).find(i=>i.id==t.dataset.rz);if(it){sel={t:'i',id:it.id};ms=new Set();drag2={it,w,w0:it.w||200,h0:it.h||160}}return}
+ if(t&&t.dataset.i){const it=(p.items||[]).find(i=>i.id==t.dataset.i);if(it){sel={t:'i',id:it.id};ms=new Set();drag3={it,w,x0:it.x,y0:it.y,moved:false}}all();return}
+ if(t&&t.dataset.c){const id=t.dataset.c;
+  if(tool=='link'){if(!pend)pend=id;else{link(pend,id);pend=null;tool='select'}pick(id);all();return}
+  if(e.shiftKey){ms.has(id)?ms.delete(id):ms.add(id);sel={t:'c',id}}else if(!ms.has(id))pick(id);else sel={t:'c',id};
+  const cs=p.cards.filter(c=>ms.has(c.id));drag={w,id,cs:cs.map(c=>({c,a:abs(p,c)})),moved:false,lock:cs.some(c=>locked(p,c))}}
+ else if(t&&t.dataset.e){sel={t:'e',id:t.dataset.e};ms=new Set()}else if(t&&t.dataset.l){sel={t:'l',id:t.dataset.l};ms=new Set()}
+ else{sel=null;ms=new Set();pend=null;if(e.shiftKey)marq={x:w.x,y:w.y,x2:w.x,y2:w.y};else sp()}
+ all()});
+svg.addEventListener('pointermove',e=>{if(drag&&!drag.lock){const w=toW(e),p=P(),dx=w.x-drag.w.x,dy=w.y-drag.w.y;let mv=false;
+  drag.cs.forEach(o=>{const nx=snap(o.a.x+dx),ny=Math.max(50,snap(o.a.y+dy));if(abs(p,o.c).x!=nx||o.c.y!=ny){setAbs(p,o.c,nx,ny);mv=true}});
+  if(mv){drag.moved=true;gd=[];const pr=drag.cs.find(o=>o.c.id==drag.id);if(pr){const a=abs(p,pr.c);p.cards.forEach(o=>{if(ms.has(o.id))return;const b=abs(p,o);if(b.x==a.x)gd.push({x:a.x});if(b.x+CW/2==a.x+CW/2)gd.push({x:a.x+CW/2});if(b.y==a.y)gd.push({y:a.y})})}render()}}
+ else if(marq){const w=toW(e);marq.x2=w.x;marq.y2=w.y;render()}
+ else if(pan){view.x=pan.vx+e.clientX-pan.x;view.y=pan.vy+e.clientY-pan.y;render()}});
+const end=()=>{const p=P();if(marq){const x1=Math.min(marq.x,marq.x2),x2=Math.max(marq.x,marq.x2),y1=Math.min(marq.y,marq.y2),y2=Math.max(marq.y,marq.y2),h=hidden(p);
+  ms=new Set(p.cards.filter(c=>{const a=abs(p,c);return !h.has(c.id)&&a.x<x2&&a.x+CW>x1&&a.y<y2&&a.y+ch(c)>y1}).map(c=>c.id));sel=ms.size?{t:'c',id:[...ms][0]}:null;marq=null;all()}
+ if(drag&&drag.moved)commit();drag=pan=null;if(gd.length){gd=[];render()}if(RM)mergeRemote()};
+svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+svg.addEventListener('pointermove',e=>{if(!drag3&&!drag2)return;const w=toW(e);
+ if(drag3){drag3.it.x=Math.max(0,snap(drag3.x0+w.x-drag3.w.x));drag3.it.y=Math.max(0,snap(drag3.y0+w.y-drag3.w.y));drag3.moved=true}
+ else{const it=drag2.it;it.w=Math.max(60,snap(drag2.w0+w.x-drag2.w.x));if(it.t=='frame')it.h=Math.max(40,snap(drag2.h0+w.y-drag2.w.y))}render()});
+svg.addEventListener('pointerup',()=>{if(drag3||drag2){drag3=drag2=null;commit();panel()}});
+svg.addEventListener('dblclick',e=>{const t=e.target.closest('[data-c]');if(t&&!pres){const i=$('#pn [data-k=jab]');if(i){i.focus();i.select()}}});
+svg.addEventListener('wheel',e=>{e.preventDefault();if(e.ctrlKey||e.metaKey){const r=svg.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,k=Math.min(3,Math.max(.1,view.k*(e.deltaY<0?1.1:.9)));view.x=mx-(mx-view.x)*k/view.k;view.y=my-(my-view.y)*k/view.k;view.k=k}else{view.x-=e.deltaX;view.y-=e.deltaY}render()},{passive:false});
+function zoom(f){const r=svg.getBoundingClientRect(),mx=r.width/2,my=r.height/2,k=Math.min(3,Math.max(.1,view.k*f));view.x=mx-(mx-view.x)*k/view.k;view.y=my-(my-view.y)*k/view.k;view.k=k;render()}
+function fit(){const r=svg.getBoundingClientRect(),p=P(),k=Math.min(1,(r.width-40)/pageW(p),(r.height-40)/pageH(p));view={k,x:Math.max(20,(r.width-pageW(p)*k)/2),y:20+(p.title?56*k:0)};render()}
+const newCard=(l,y,t)=>({id:uid(),l,dx:35,y,jab:t?.jab||'Jabatan Baru',names:t?[...t.names]:['Nama'],lv:t?.lv||0,tr:t?.tr||'',c:K0,photo:'',st:t?.st||'terisi',grade:t?.grade||'',shape:t?.shape||'box',np:!!t?.np,cols:t?.cols||1});
+function free(p,c){let n=0;while(n++<50&&p.cards.some(o=>o!==c&&o.l==c.l&&Math.abs(o.dx-c.dx)<CW&&Math.abs(o.y-c.y)<ch(c)+10))c.y+=ch(c)+30}
+function addAt(t){const p=P(),r=svg.getBoundingClientRect(),cx=(r.width/2-view.x)/view.k,cy=(r.height/2-view.y)/view.k;let l=0;p.lanes.forEach((_,i)=>{if(cx>=laneX(p,i))l=i});const c=newCard(l,Math.max(60,snap(cy-50)),t);free(p,c);p.cards.push(c);pick(c.id);commit();all()}
+function tidy(p){const id=Object.fromEntries(p.cards.map(c=>[c.id,c])),par={},kid={},n=p.lanes.length-1;p.cards.forEach(c=>kid[c.id]=[]);
+ const up=(a,b)=>{let x=a,i=0;while(x&&i++<5000){if(x==b)return true;x=par[x]}return false};
+ p.edges.forEach(e=>{if(id[e.from]&&id[e.to]&&e.from!=e.to&&par[e.to]==null&&!up(e.from,e.to)){par[e.to]=e.from;kid[e.from].push(e.to)}});
+ Object.values(kid).forEach(k=>k.sort((a,b)=>id[a].y-id[b].y||id[a].l-id[b].l));
+ const roots=p.cards.filter(c=>par[c.id]==null).sort((a,b)=>a.y-b.y||a.l-b.l).map(c=>c.id),GAP=24;let cur=80;
+ const place=i=>{const c=id[i],ks=kid[i];if(!ks.length){c.y=cur;cur+=ch(c)+GAP;return}
+  ks.forEach(place);const f=id[ks[0]],l=id[ks[ks.length-1]];c.y=Math.max(80,(f.y+l.y+ch(l))/2-ch(c)/2);cur=Math.max(cur,c.y+ch(c)+GAP)};
+ roots.forEach(r=>{place(r);cur+=16});
+ p.lanes.forEach((_,li)=>{let b=0;p.cards.filter(c=>Math.min(c.l,n)==li).sort((x,y)=>x.y-y.y).forEach(c=>{if(c.y<b+GAP)c.y=b+GAP;b=c.y+ch(c)})});
+ p.cards.forEach(c=>{c.y=Math.round(c.y/10)*10;c.dx=Math.round((p.lanes[Math.min(c.l,n)].w-CW)/10)*5})}
+function delSel(){const p=P();if(!sel&&!ms.size)return;
+ if(ms.size){const ids=[...ms].filter(i=>{const c=p.cards.find(c=>c.id==i);return c&&!locked(p,c)});p.cards=p.cards.filter(c=>!ids.includes(c.id));p.edges=p.edges.filter(e=>!ids.includes(e.from)&&!ids.includes(e.to))}
+ else if(sel.t=='i')p.items=(p.items||[]).filter(i=>i.id!=sel.id);
+ else if(sel.t=='e')p.edges=p.edges.filter(e=>e.id!=sel.id);
+ else if(sel.t=='l'&&p.lanes.length>1){const i=p.lanes.findIndex(l=>l.id==sel.id),ids=p.cards.filter(c=>c.l==i).map(c=>c.id);p.cards=p.cards.filter(c=>c.l!=i);p.cards.forEach(c=>{if(c.l>i)c.l--});p.edges=p.edges.filter(e=>!ids.includes(e.from)&&!ids.includes(e.to));p.lanes.splice(i,1)}
+ sel=null;ms=new Set();commit();all()}
+function insLane(at){const p=P();p.cards.forEach(c=>{if(c.l>=at)c.l++});p.lanes.splice(at,0,{id:uid(),name:'Lane Baru',w:320});commit();sel={t:'l',id:p.lanes[at].id};ms=new Set();all()}
+function mvLane(d){const p=P(),i=p.lanes.findIndex(l=>l.id==sel.id),j=i+d;if(j<0||j>=p.lanes.length)return;[p.lanes[i],p.lanes[j]]=[p.lanes[j],p.lanes[i]];p.cards.forEach(c=>{if(c.l==i)c.l=j;else if(c.l==j)c.l=i});commit();all()}
+const clone=o=>JSON.parse(JSON.stringify(o));
+function paste(){if(!CL)return;const p=P(),m={};const cs=CL.cards.map(c=>{const n={...clone(c),id:uid(),dx:c.dx+20,y:c.y+30};n.l=Math.min(n.l,p.lanes.length-1);m[c.id]=n.id;return n});p.cards.push(...cs);CL.edges.forEach(e=>p.edges.push({id:uid(),from:m[e.from],to:m[e.to],dash:e.dash}));ms=new Set(cs.map(c=>c.id));sel=cs.length?{t:'c',id:cs[0].id}:null;commit();all()}
+function copy(){const p=P(),ids=[...ms];CL={cards:clone(p.cards.filter(c=>ids.includes(c.id))),edges:clone(p.edges.filter(e=>ids.includes(e.from)&&ids.includes(e.to)))};toast(ids.length+' kartu disalin')}
+const toPhoto=async b=>{if(AS){try{return'/_blob/'+(await AS.upload(b)).id}catch(e){}}return new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)})};
+const rs=f=>new Promise(ok=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,220/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=im.width*s;cv.height=im.height*s;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);cv.toBlob(async b=>ok(await toPhoto(b)),'image/jpeg',.8)};im.onerror=()=>ok('');im.src=r.result};r.readAsDataURL(f)});
+function pickFiles(multi,cb){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=multi;f.onchange=()=>cb([...f.files]);f.click()}
+document.addEventListener('click',async e=>{const b=e.target.closest('button,.tab');if(!b)return;const p=P(),d=b.dataset;
+ if(d.t!=null){S.cur=+d.t;sel=null;ms=new Set();all();fit();commit();return}
+ if(d.col!=null){if(sel&&sel.t=='i'){const it=(p.items||[]).find(i=>i.id==sel.id);if(it)it.k=+d.col}else p.cards.filter(c=>ms.has(c.id)).forEach(c=>c.c=PRE[d.col]);commit();all();return}
+ if(d.go){pick(d.go);all();return}
+ if(d.tp!=null){addAt([...BUILT,...S.tpl][d.tp]);return}
+ if(d.dt!=null){S.tpl.splice(d.dt,1);commit();panel();return}
+ if(d.rs!=null){S.pages=JSON.parse(SN[d.rs].d);S.cur=0;sel=null;ms=new Set();commit();all();fit();return}
+ if(d.df!=null){dtxt=diff(d.df);panel();return}
+ if(d.ds!=null){SN.splice(d.ds,1);try{localStorage.setItem('cb1s',JSON.stringify(SN))}catch(x){}panel();return}
+ const a=d.a;if(!a)return;const sc=sel&&sel.t=='c'&&p.cards.find(c=>c.id==sel.id),mc=p.cards.filter(c=>ms.has(c.id));
+ const al=f=>{const m=mc.map(c=>({c,a:abs(p,c)}));f(m);commit();all()};
+ const R={'tool-select'(){tool='select';pend=null;render()},'tool-link'(){tool='link';pend=null;render()},
+ addcard(){addAt()},addlane(){insLane(p.lanes.length)},lleft(){insLane(p.lanes.findIndex(l=>l.id==sel.id))},lright(){insLane(p.lanes.findIndex(l=>l.id==sel.id)+1)},lmvl(){mvLane(-1)},lmvr(){mvLane(1)},
+ tidy(){tidy(p);commit();all();toast('Layout dirapikan (Undo untuk membatalkan)')},auto(){p.auto=!p.auto;if(p.auto)toast('Auto-rapi aktif: kartu tersusun otomatis. Seret kartu ke atas/bawah untuk mengubah urutan.');commit();all()},compact(){S.compact=!S.compact;commit();all()},
+ pres(){pres=!pres;document.body.classList.toggle('pres',pres);sel=null;ms=new Set();all();setTimeout(fit,30)},
+ undo,redo,zin(){zoom(1.2)},zout(){zoom(.83)},fit,del:delSel,copy,
+ 'al-l'(){al(m=>{const x=Math.min(...m.map(o=>o.a.x));m.forEach(o=>setAbs(p,o.c,x,o.c.y))})},
+ 'al-c'(){al(m=>m.forEach(o=>o.c.dx=Math.round((p.lanes[o.c.l].w-CW)/20)*10))},
+ 'al-t'(){al(m=>{const y=Math.min(...m.map(o=>o.a.y));m.forEach(o=>o.c.y=y)})},
+ 'al-d'(){al(m=>{m.sort((a,b)=>a.a.y-b.a.y);const y0=m[0].a.y,st=(m[m.length-1].a.y-y0)/(m.length-1);m.forEach((o,i)=>o.c.y=snap(y0+i*st))})},
+ lockms(){const v=!mc.every(c=>c.lock);mc.forEach(c=>c.lock=v);commit();all()},
+ dup(){const c={...clone(sc),id:uid(),dx:sc.dx+20,y:sc.y+30};p.cards.push(c);pick(c.id);commit();all()},
+ child(){const l=Math.min(sc.l+1,p.lanes.length-1),c=newCard(l,sc.y+ch(sc)+60);c.dx=sc.l==l?sc.dx:35;free(p,c);p.cards.push(c);p.edges.push({id:uid(),from:sc.id,to:c.id,dash:false});pick(c.id);commit();all()},
+ fold(){sc.col=!sc.col;commit();all()},savetpl(){S.tpl.push({n:sc.jab,jab:sc.jab,names:[...sc.names],c:sc.c,st:sc.st,grade:sc.grade,shape:sc.shape,np:sc.np,cols:sc.cols});commit();toast('Template disimpan (lihat di pengaturan halaman)')},
+ dash(){const g=p.edges.find(g=>g.id==sel.id);g.dash=!g.dash;commit();all()},nophoto(){sc.photo='';commit();all()},
+ photo(){pickFiles(false,async f=>{if(f[0]){sc.photo=await rs(f[0]);commit();all()}})},
+ bulk(){pickFiles(true,async fs=>{let n=0;for(const f of fs){const b=f.name.replace(/\.[^.]+$/,'').toLowerCase(),c=p.cards.find(c=>c.names.some(x=>x.toLowerCase()==b||x.toLowerCase().replace(/\s+/g,'_')==b));if(c){c.photo=await rs(f);n++}}commit();all();toast(`${n} dari ${fs.length} foto cocok dan dipasang`)})},
+ validate(){vres=validate(p);panel()},
+ snap(){const n=($('#snn').value||'').trim()||'Versi '+(SN.length+1);SN.push({name:n,t:Date.now(),d:JSON.stringify(S.pages)});if(SN.length>12)SN.shift();try{localStorage.setItem('cb1s',JSON.stringify(SN))}catch(x){toast('Penyimpanan penuh, hapus versi lama')}panel()},
+ addpage(){S.pages.push({id:uid(),name:'Halaman '+(S.pages.length+1),H:900,lanes:p.lanes.map(l=>({id:uid(),name:l.name,w:l.w})),cards:[],edges:[],ls:p.ls,arrow:p.arrow,hc:p.hc,font:p.font});S.cur=S.pages.length-1;sel=null;ms=new Set();commit();all();fit()},
+ duppage(){const n=clone(p),m={};n.id=uid();n.name=p.name+' (salinan)';n.lanes.forEach(l=>l.id=uid());n.cards.forEach(c=>{const o=c.id;c.id=uid();m[o]=c.id});n.edges.forEach(g=>{g.id=uid();g.from=m[g.from];g.to=m[g.to]});S.pages.push(n);S.cur=S.pages.length-1;sel=null;ms=new Set();commit();all();fit()},
+ delpage(){if(S.pages.length<2)return;S.pages.splice(S.cur,1);S.cur=Math.max(0,S.cur-1);sel=null;ms=new Set();commit();all();fit()},
+ import(){$('#file').click()},'x-drawio'(){inl(JSON.stringify(S.pages)).then(j=>dl(new Blob([toXML(JSON.parse(j))],{type:'text/xml'}),'chart.drawio'))},'x-json'(){inl(JSON.stringify(S)).then(j=>dl(new Blob([j],{type:'application/json'}),'chart-proyek.json'))},
+ 'i-text'(){addItem('text')},'i-frame'(){addItem('frame')},'i-legend'(){addItem('legend')},'x-rep'(){dl(new Blob(['\uFEFF'+toRep()],{type:'text/csv'}),'laporan-struktur.csv')},idup(){const it=(p.items||[]).find(i=>i.id==sel.id),n={...clone(it),id:uid(),x:it.x+20,y:it.y+20};p.items.push(n);sel={t:'i',id:n.id};commit();all()},
+ 'x-csv'(){dl(new Blob(['\uFEFF'+toCSV(p)],{type:'text/csv'}),p.name+'.csv')},'x-tpl'(){dl(new Blob(['\uFEFFHalaman,Lane,Jabatan,Nama,Level,Jenjang,Atasan,Status,Grade,Catatan\nGBS,Direktur,Direktur Group,Budi,Direktur,L9,,terisi,,\nGBS,Head,Head of Finance,Siti,General Manager,L7,Direktur Group,terisi,,\nGBS,Manager,Finance Manager,,Manager,L5,Head of Finance,kosong,,Sedang rekrutmen\n'],{type:'text/csv'}),'template-impor.csv')},
+ 'x-svg'(){inl(chartSVG(p)).then(x=>dl(new Blob([x],{type:'image/svg+xml'}),p.name+'.svg'))},'x-png'(){toPNG(p)},
+ 'x-print'(){inl(S.pages.map(chartSVG).join('')).then(x=>{const css=`body{margin:0}svg{width:100%;height:auto;display:block;page-break-after:always}@page{size:${S.paper||'A3'} ${S.orient||'landscape'};margin:8mm}`;
+  if(DLC){dl(new Blob([`<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><title>Chart</title><style>${css}</style></head><body>${x}</body></html>`],{type:'text/html'}),'cetak-chart.html');toast('Buka file cetak-chart.html di browser, lalu Ctrl+P dan pilih Simpan sebagai PDF.')}
+  else{const w=window.open('');if(!w){toast('Pop-up diblokir. Gunakan Ekspor PNG/SVG.');return}w.document.write(`<title>Chart</title><style>${css}</style>`+x);w.document.close();setTimeout(()=>w.print(),500)}})}};
+ R[a]?.();document.querySelectorAll('details').forEach(x=>{if(!x.classList.contains('sec'))x.open=false})});
+let DLC=null;
+async function dl(b,n,t){
+ if(DLC){try{await DLC.save({filename:n,data:b});toast('Tersimpan: '+n);return}
+  catch(e){const c=e&&e.code;if(c=='declined')return;
+   if(c=='rejected_extension'&&!t){await dl(b,n+'.txt',1);toast('Disimpan sebagai '+n+'.txt. Ganti ekstensinya menjadi .'+n.split('.').pop()+' sebelum dibuka.');return}
+   toast('Gagal menyimpan '+n+' ('+(c||'?')+'). '+((e&&e.message)||''));return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function toPNG(p){const W=pageW(p),H=pageH(p)+20+(p.title?56:0),s=Math.min(2,16000/Math.max(W,H)),im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=W*s;c.height=H*s;const x=c.getContext('2d');x.scale(s,s);x.drawImage(im,0,0);c.toBlob(b=>dl(b,p.name+'.png'))};inl(chartSVG(p)).then(x=>{im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(x)})}
+$('#pn').addEventListener('input',e=>{const k=e.target.dataset.k,p=P();if(!k)return;const c=sel&&sel.t=='c'&&p.cards.find(c=>c.id==sel.id),l=sel&&sel.t=='l'&&p.lanes.find(l=>l.id==sel.id),it=sel&&sel.t=='i'&&(p.items||[]).find(i=>i.id==sel.id),v=e.target.type=='checkbox'?e.target.checked:e.target.value;
+ ({jab(){c.jab=v},lv(){if(v){c.tr=v[0];c.lv=+v.slice(1)}else{c.lv=0;c.tr=''}},grade(){c.grade=v},note(){c.note=v},st(){c.st=v},lock(){c.lock=v},names(){c.names=v.split('\n').filter((x,i,a)=>x.trim()||i<a.length-1)},
+ lname(){l.name=v},lw(){l.w=Math.max(260,+v||320)},llock(){l.lock=v},pname(){p.name=v;tabs()},shape(){c.shape=v},np(){c.np=v},cols(){c.cols=+v},mshape(){if(v)p.cards.filter(x=>ms.has(x.id)).forEach(x=>x.shape=v)},mnp(){p.cards.filter(x=>ms.has(x.id)).forEach(x=>x.np=v)},ptitle(){p.title=v},itext(){it.text=v},ifs(){it.fs=+v},ib(){it.b=v},iw(){it.w=Math.max(60,+v||200)},ih(){it.h=Math.max(40,+v||160)},ist(){it.st=v},ish(){it.ish=v},slv(){it.slv=v},ph(){p.H=+v||600},ls(){p.ls=v},arrow(){p.arrow=v},auto(){p.auto=v;if(v)tidy(p)},br(){p.br=v},grid(){p.grid=v},hc(){p.hc=v},font(){p.font=v},paper(){S.paper=v},orient(){S.orient=v}})[k]?.();if(/^lg\d$/.test(k)&&it){it.lg=it.lg||[];it.lg[+k[2]]=v}if(/^sh\d$/.test(k)&&it){it.sh=it.sh||[...SHD];it.sh[+k[2]]=v}render()});
+$('#pn').addEventListener('change',()=>{commit();if(sel)panel()});
+$('#tabs').addEventListener('dblclick',e=>{const t=e.target.closest('.tab');if(!t||ro)return;t.contentEditable=true;t.focus();t.onblur=()=>{S.pages[+t.dataset.t].name=t.textContent.trim()||'Halaman';commit();all()};t.onkeydown=k=>{if(k.key=='Enter'){k.preventDefault();t.blur()}}});
+$('#q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
+document.addEventListener('keydown',e=>{if(ro){if(e.key=='Escape'&&pres)document.querySelector('#xp').click();return}if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||document.activeElement.isContentEditable)return;const m=e.ctrlKey||e.metaKey,p=P();
+ if(m&&e.key=='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(m&&e.key=='y'){e.preventDefault();redo()}
+ else if(m&&e.key=='d'&&sel&&sel.t=='c'){e.preventDefault();document.querySelector('[data-a=dup]')?.click()}
+ else if(m&&e.key=='c'&&ms.size){copy()}else if(m&&e.key=='v'){e.preventDefault();paste()}
+ else if(m&&e.key=='a'){e.preventDefault();ms=new Set(p.cards.map(c=>c.id));sel=p.cards[0]?{t:'c',id:p.cards[0].id}:null;all()}
+ else if(e.key=='Delete'||e.key=='Backspace'){e.preventDefault();delSel()}
+ else if(e.key=='Escape'){if(pres)document.querySelector('#xp').click();pend=null;tool='select';sel=null;ms=new Set();all()}
+ else if(ms.size&&e.key.startsWith('Arrow')){e.preventDefault();p.cards.filter(c=>ms.has(c.id)&&!locked(p,c)).forEach(c=>{if(e.key=='ArrowUp')c.y=Math.max(50,c.y-10);if(e.key=='ArrowDown')c.y+=10;if(e.key=='ArrowLeft')c.dx-=10;if(e.key=='ArrowRight')c.dx+=10});commit();render()}});
+// ekspor drawio & csv
+const b2d=u=>new Promise(ok=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;c.getContext('2d').drawImage(i,0,0);ok(c.toDataURL('image/jpeg',.85))};i.onerror=()=>ok('');i.src=u});
+async function inl(t){const m=[...new Set(t.match(/\/_blob\/[0-9a-f]{32}/g)||[])];for(const u of m){const d=await b2d(u);t=t.split(u).join(d)}return t}
+function toXML(PG){const FT=p=>(p.font||'Arial,sans-serif').split(',')[0],AT=o=>Object.entries(o).filter(e=>e[1]).map(e=>` ${e[0]}="${esc(e[1])}"`).join('');
+ const mk=(id,par,v,st,g,at)=>{const cell=o=>`<mxCell${o?'':` id="${id}" value="${esc(v)}"`} parent="${par}" vertex="1" style="${st}"><mxGeometry as="geometry" ${g}/></mxCell>`;return at&&Object.values(at).some(Boolean)?`<object label="${esc(v)}" id="${id}"${AT(at)}>${cell(1)}</object>`:cell(0)};
+ let o=`<mxfile host="app.diagrams.net" pages="${PG.length}">`;
+ PG.forEach(p=>{const H=pageH(p),hc=p.hc||'#E8E7E0',ff=`fontFamily=${FT(p)};`;o+=`<diagram name="${esc(p.name)}" id="${p.id}"><mxGraphModel grid="1" page="1" gridSize="10" pageWidth="${pageW(p)}" pageHeight="${H}"><root><mxCell id="0"/><mxCell id="1" parent="0"/>`;
+  p.lanes.forEach((l,i)=>o+=mk(l.id,'1',l.name,`swimlane;horizontal=1;startSize=40;fontStyle=1;fontSize=13;html=1;whiteSpace=wrap;collapsible=0;${ff}swimlaneFillColor=#E6E6E6;fillColor=#E6E6E6;strokeColor=#9A9990;`,`x="${laneX(p,i)}" y="0" width="${l.w}" height="${H}"`,{cbLock:l.lock?'1':'',...(i?{}:{cbLs:p.ls||'elbow',cbArrow:p.arrow?'1':'0',cbGrid:p.grid?'1':'',cbFont:p.font,cbHc:p.hc,cbBr:p.br,cbAuto:p.auto?'1':''})}));
+  const cl=(id,par,v,st,x,y,w,h,at)=>mk(id,par,v,'rounded=0;whiteSpace=wrap;html=1;'+st,`x="${x}" y="${y}" width="${w}" height="${h}"`,at);
+  p.cards.forEach(c=>{const L=p.lanes[Math.min(c.l,p.lanes.length-1)],k=K0,h=ch(c,1),sh=c.shape||'box',pa=/^para/.test(sh),np=!!c.np,cols=np&&c.cols==2?2:1,x0=np?0:74,cw=CW-x0,R=Math.ceil(c.names.length/cols),b=pa?'strokeColor=none;fillColor=none;':`strokeColor=${k.s};fillColor=${k.f};`,ph=c.photo&&c.photo.startsWith('data:')?`shape=image;aspect=fixed;imageAspect=0;image=${c.photo.replace(';base64','')};`:'';
+   const os=`fillColor=${k.f};strokeColor=${k.s};`+(pa?`shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;size=${SK};`:/-2$/.test(sh)?'shape=ext;double=1;':'')+(/-d$/.test(sh)?'dashed=1;dashPattern=6 4;':'');
+   o+=cl(c.id,L.id,'',os,c.dx,c.y,CW,h,{cbSt:c.st||'none',cbLv:lvKey(c),cbGrade:c.grade,cbNote:c.note,cbLock:c.lock?'1':'',cbCol:c.col?'1':'',cbShape:sh=='box'?'':sh,cbNp:np?'1':'',cbCols:cols==2?'2':''});
+   if(!np)o+=cl(c.id+'_foto',c.id,ph?'':'Foto',ph||`strokeColor=${k.s};fillColor=#FFFFFF;fontSize=10;fontColor=#9A9990;`,0,0,74,h);
+   o+=cl(c.id+'_jab',c.id,c.jab,b+ff+`fontSize=11;fontStyle=1;fontColor=${k.t};spacingLeft=4;spacingRight=4;`,x0,0,cw,54);
+   c.names.forEach((n,i)=>o+=cl(c.id+'_n'+i,c.id,n,b+ff+`fontSize=11;fontColor=${k.t};spacingLeft=4;spacingRight=4;`,x0+cw/cols*(i%cols),54+22*Math.floor(i/cols),cw/cols,22));
+   o+=cl(c.id+'_k0',c.id,lvText(c)||KP,b+ff+(lvText(c)?`fontSize=10;fontColor=${k.t};fontStyle=1;`:`fontSize=10;fontColor=#9A9990;fontStyle=2;`),x0,54+22*R,cw,22)});
+  p.edges.forEach(e=>{const g=edgeG(p,e,1),pt=g&&p.ls!='straight'?`<Array as="points"><mxPoint x="${g.tr}" y="${g.sy}"/><mxPoint x="${g.tr}" y="${g.ty}"/></Array>`:'';o+=`<mxCell id="${e.id}" parent="1" source="${e.from}" target="${e.to}" edge="1" style="${p.ls=='curve'?'curved=1;':''}rounded=0;html=1;endArrow=${p.arrow?'block':'none'};${e.dash?'dashed=1;dashPattern=8 8;':''}"><mxGeometry relative="1" as="geometry">${pt}</mxGeometry></mxCell>`});
+  (p.items||[]).forEach(it=>{const h=ih(it),w=it.w||200,st=it.t=='frame'?'rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;verticalAlign=top;align=left;fontStyle=1;spacingLeft=8;':it.t=='legend'?'rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontStyle=1;spacingLeft=8;':`text;html=1;whiteSpace=wrap;fontSize=${it.fs||12};align=left;verticalAlign=top;`+(it.b?'fontStyle=1;':'');
+   o+=mk(it.id,'1',it.t=='legend'?'Legenda':it.text||'',st,`x="${it.x}" y="${it.y}" width="${w}" height="${h}"`,{cbItem:it.t,cbData:JSON.stringify(it)})});
+  if(p.title)o+=mk('ttl_'+p.id,'1',p.title,'text;html=1;fontSize=20;fontStyle=1;align=left;','x="8" y="-52" width="600" height="36"',{cbTitle:p.title});
+  o+='</root></mxGraphModel></diagram>'});return o+'</mxfile>'}
+const q2=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+function toCSV(p){const rows=[['Halaman','Lane','Jabatan','Nama','Level','Jenjang','Atasan','Status','Grade','Catatan']];[...p.cards].sort((a,b)=>a.l-b.l||a.y-b.y).forEach(c=>{const e=p.edges.find(e=>e.to==c.id),f=e&&p.cards.find(x=>x.id==e.from);rows.push([p.name,p.lanes[c.l]?.name,c.jab,c.names.join(' | '),lvText(c),lvJ(c),f?f.jab:'',c.st||'',c.grade||'',c.note||''])});return rows.map(r=>r.map(q2).join(',')).join('\n')}
+// laporan struktur
+const kindOf=c=>[isPara(c)?'Non-struktural (fungsional)':'Struktural',/-d$/.test(c.shape||'')?'level tidak sesuai lane':'',dbl(c)?'opsional (boleh ada/tidak)':''].filter(Boolean).join(' · ');
+function report(p){const id=Object.fromEntries(p.cards.map(c=>[c.id,c])),par={},kd={};p.cards.forEach(c=>kd[c.id]=[]);
+ p.edges.forEach(e=>{if(id[e.from]&&id[e.to]&&e.from!=e.to){if(!kd[e.from].includes(e.to))kd[e.from].push(e.to);if(par[e.to]==null)par[e.to]=e.from}});
+ const lvl=i=>{let n=1,x=par[i],g=0;while(x&&g++<500){n++;x=par[x]}return n},tot=i=>{const s=new Set(),go=a=>kd[a].forEach(k=>{if(!s.has(k)&&k!=i&&!isPara(id[k])){s.add(k);go(k)}});go(i);return s.size};
+ const rows=p.cards.map(c=>({c,dir:kd[c.id].filter(k=>!isPara(id[k])).length,tot:tot(c.id),lv:lvl(c.id),pa:id[par[c.id]],ns:isPara(c)})),sr=rows.filter(r=>!r.ns),mg=sr.filter(r=>r.dir),cnt=s=>sr.filter(r=>r.c.st==s).length;
+ return{rows,mg,n:sr.length,fill:cnt('terisi'),vac:cnt('kosong'),rec:cnt('rekrut'),nf:rows.length-sr.length,ld:rows.filter(r=>/-d$/.test(r.c.shape||'')).length,op:rows.filter(r=>dbl(r.c)).length,depth:Math.max(0,...sr.map(r=>r.lv)),avg:mg.length?mg.reduce((a,r)=>a+r.dir,0)/mg.length:0,max:Math.max(0,...sr.map(r=>r.dir))}}
+function repHTML(p){const r=report(p),dist=Object.entries(r.rows.reduce((a,x)=>{if(x.c.lv){const k=lvText(x.c),e=a[k]||(a[k]={n:0,l:99});e.n++;e.l=Math.min(e.l,x.c.lv)}return a},{})).sort((a,b)=>a[1].l-b[1].l).map(([k,v])=>k+' ×'+v.n).join(', ')||'belum diisi',top=[...r.mg].sort((a,b)=>b.dir-a.dir||b.tot-a.tot).slice(0,10),op=r.rows.filter(x=>x.c.st=='kosong'||x.c.st=='rekrut'),tr=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+ return`<table>${tr('Posisi struktural',r.n)}${tr('Terisi / Kosong / Rekrut',r.fill+' / '+r.vac+' / '+r.rec)}${tr('Tingkat pengisian',(r.n?Math.round(r.fill/r.n*100):0)+'%')}${tr('Kedalaman level',r.depth)}${tr('Rata-rata span',r.avg.toFixed(1))}${tr('Span terbesar',r.max)}${tr('Level jabatan terisi',dist)}${r.nf?tr('Non-struktural (jajargenjang)',r.nf):''}${r.ld?tr('Level tidak sesuai lane (putus-putus)',r.ld):''}${r.op?tr('Posisi opsional (garis ganda)',r.op):''}</table>`
+ +(top.length?`<b>Span of control (10 teratas)</b>`+top.map(x=>`<button class="it" data-go="${x.c.id}">${esc(x.c.jab)}: ${x.dir} langsung, ${x.tot} total${x.dir>8?' ⚠':''}</button>`).join(''):'')
+ +(op.length?`<b>Posisi kosong/rekrutmen (${op.length})</b>`+op.map(x=>`<button class="it" data-go="${x.c.id}">${x.c.st=='kosong'?'🔴':'🟠'} ${esc(x.c.jab)} <span class="mu">· ${esc((p.lanes[x.c.l]||{}).name)}</span></button>`).join(''):'')
+ +'<button data-a="x-rep">Ekspor laporan CSV</button><span class="mu">⚠ = span lebih dari 8 bawahan langsung. Kartu jajargenjang tidak dihitung sebagai struktur.</span>'}
+function toRep(){const rows=[['Halaman','Lane','Tingkat hierarki','Jenis kartu','Jabatan','Level jabatan','Jenjang','Jalur level','Nama','Status','Grade','Atasan langsung','Bawahan langsung','Total bawahan']];S.pages.forEach(p=>report(p).rows.sort((a,b)=>a.lv-b.lv||a.c.l-b.c.l||a.c.y-b.c.y).forEach(x=>rows.push([p.name,(p.lanes[x.c.l]||{}).name,x.lv,kindOf(x.c),x.c.jab,lvText(x.c),lvJ(x.c),(x.c.lv?(x.c.tr=='I'?'Individual Contributor':'Struktural'):''),x.c.names.join(' | '),x.c.st||'',x.c.grade||'',x.pa?x.pa.jab:'',x.dir,x.tot])));return rows.map(r=>r.map(q2).join(',')).join('\n')}
+// impor
+function flatten(g){g.querySelectorAll('object,UserObject').forEach(o=>{const c=o.querySelector('mxCell');if(!c)return;c.setAttribute('id',o.getAttribute('id'));c.setAttribute('value',o.getAttribute('label')??o.getAttribute('value')??'');[...o.attributes].forEach(a=>{if(!['id','label','value'].includes(a.name))c.setAttribute(a.name,a.value)});o.replaceWith(c)})}
+function fromXML(g,name){flatten(g);const cells=[...g.querySelectorAll('mxCell')],by={};cells.forEach(c=>(by[c.getAttribute('parent')]??=[]).push(c));
+ const geo=c=>c.querySelector('mxGeometry'),n=(c,k)=>+(geo(c)?.getAttribute(k)||0),st=(c,k)=>((c.getAttribute('style')||'').match(new RegExp('(?:^|;)'+k+'=([^;]*)'))||[])[1];
+ const lc=cells.filter(c=>/^swimlane/.test(c.getAttribute('style')||'')&&c.getAttribute('parent')=='1').sort((a,b)=>n(a,'x')-n(b,'x'));
+ if(!lc.length)return null;const p={id:uid(),name,H:Math.max(600,...lc.map(l=>n(l,'height'))),lanes:[],cards:[],edges:[]},ids={};
+ lc.forEach((l,i)=>{p.lanes.push({id:uid(),name:l.getAttribute('value')||'Lane',w:n(l,'width')||320,lock:l.getAttribute('cbLock')=='1'});
+  (by[l.getAttribute('id')]||[]).filter(c=>c.getAttribute('vertex')&&geo(c)).forEach(c=>{const id=c.getAttribute('id'),ks=by[id]||[],kid=r=>ks.find(k=>r.test(k.getAttribute('id'))),
+   names=ks.filter(k=>/_n\d+$/.test(k.getAttribute('id'))).sort((a,b)=>n(a,'y')-n(b,'y')||n(a,'x')-n(b,'x')).map(k=>k.getAttribute('value')||''),kd=kid(/_k\d+$/)?.getAttribute('value')||'',jb=kid(/_jab$/),fo=kid(/_foto$/),im=fo&&st(fo,'image'),ph=im&&/^data:image/.test(im)?im.replace(',',';base64,'):'',f=st(c,'fillColor')||'#F1EFE8',s=st(c,'strokeColor')||'#5F5E5A';
+   const pr=PRE.find(k=>k.f.toLowerCase()==f.toLowerCase()),o={id:uid(),l:i,dx:n(c,'x'),y:n(c,'y'),jab:(jb||c).getAttribute('value')||'',names,...(()=>{const a=c.getAttribute('cbLv');return a?{tr:a[0],lv:+a.slice(1)}:parseLv(kd)})(),c:K0,photo:ph,st:(v=>v==null?(names.some(x=>x.trim())?'terisi':''):v=='none'?'':v)(c.getAttribute('cbSt')),grade:c.getAttribute('cbGrade')||'',note:c.getAttribute('cbNote')||'',lock:c.getAttribute('cbLock')=='1',col:c.getAttribute('cbCol')=='1',shape:c.getAttribute('cbShape')||'box',np:c.getAttribute('cbNp')=='1',cols:+c.getAttribute('cbCols')||1};
+   if(!ks.length)o.names=[];ids[id]=o.id;p.cards.push(o)})});
+ const l0=lc[0],ga=k=>l0.getAttribute(k);if(ga('cbLs'))p.ls=ga('cbLs');if(ga('cbArrow'))p.arrow=ga('cbArrow')=='1';p.grid=ga('cbGrid')=='1';if(ga('cbFont'))p.font=ga('cbFont');if(ga('cbHc'))p.hc=ga('cbHc');if(ga('cbBr'))p.br=ga('cbBr');p.auto=ga('cbAuto')=='1';{const tc=cells.find(c=>c.getAttribute('cbTitle'));p.title=tc?tc.getAttribute('cbTitle'):'';p.items=cells.filter(c=>c.getAttribute('cbItem')&&c.getAttribute('cbData')).map(c=>{try{return{...JSON.parse(c.getAttribute('cbData')),id:uid()}}catch(x){return null}}).filter(Boolean)}
+ cells.filter(c=>c.getAttribute('edge')).forEach(e=>{const a=ids[e.getAttribute('source')],b=ids[e.getAttribute('target')];if(a&&b&&a!=b)p.edges.push({id:uid(),from:a,to:b,dash:/dashed=1/.test(e.getAttribute('style')||'')})});return p}
+async function inflate(t){const b=Uint8Array.from(atob(t.trim()),c=>c.charCodeAt(0)),s=new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return decodeURIComponent(await new Response(s).text())}
+function parseCSV(t){const rows=[];let r=[],f='',qt=0;t=t.replace(/^\uFEFF/,'');const l1=t.split('\n')[0],d=l1.split(';').length>l1.split(',').length?';':',';
+ for(let i=0;i<t.length;i++){const c=t[i];if(qt){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else qt=0}else f+=c}else if(c=='"')qt=1;else if(c==d){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;r.push(f);rows.push(r);r=[];f=''}else f+=c}
+ if(f||r.length){r.push(f);rows.push(r)}return rows}
+function rowsToPages(rows){rows=rows.filter(r=>r.some(x=>String(x??'').trim()));if(rows.length<2)return[];const hd=rows[0].map(x=>String(x).trim().toLowerCase()),ix=re=>hd.findIndex(h=>re.test(h)),
+ I={pg:ix(/halaman|page/),ln:ix(/lane|level|tingkat/),jb:ix(/jabatan|posisi|position|title/),nm:ix(/nama|name/),lvc:ix(/level|kode|code|^id$/),jj:ix(/jenjang/),at:ix(/atasan|parent|report|manager/),st:ix(/status/),gr:ix(/grade/),nt:ix(/catatan|note/)},g=(r,k)=>k<0?'':String(r[k]??'').trim(),G={};
+ rows.slice(1).forEach(r=>{(G[g(r,I.pg)||'Impor']??=[]).push(r)});
+ return Object.entries(G).map(([name,rs])=>{const p={id:uid(),name,H:900,lanes:[],cards:[],edges:[]},LN=[...new Set(rs.map(r=>g(r,I.ln)||'Lane'))];p.lanes=LN.map(n=>({id:uid(),name:n,w:320}));
+  rs.forEach(r=>{const l=LN.indexOf(g(r,I.ln)||'Lane'),nm=g(r,I.nm).split('|').map(x=>x.trim()).filter(Boolean),s=g(r,I.st),st=/kosong|vacan/i.test(s)?'kosong':/rekrut|recruit/i.test(s)?'rekrut':nm.length?'terisi':'';
+   p.cards.push({id:uid(),l,dx:35,y:80,jab:g(r,I.jb),names:nm.length?nm:[st=='kosong'?'(Posisi kosong)':''],...(()=>{const p0=parseLv(g(r,I.lvc)),j=parseLv(g(r,I.jj));return p0.lv&&j.lv&&LVS[p0.tr][j.lv]==LVS[p0.tr][p0.lv]?{lv:j.lv,tr:p0.tr}:p0})(),c:K0,photo:'',st,grade:g(r,I.gr),note:g(r,I.nt),_a:g(r,I.at)})});
+  p.cards.forEach(c=>{if(c._a){const a=c._a.toLowerCase(),f=p.cards.find(x=>x!==c&&x.jab.toLowerCase()==a);if(f)p.edges.push({id:uid(),from:f.id,to:c.id,dash:false})}delete c._a});
+  tidy(p);return p})}
+const loadX=()=>window.XLSX?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+$('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;let pg=[];
+ try{if(/\.xlsx?$/i.test(f.name)){await loadX();const wb=XLSX.read(await f.arrayBuffer());pg=rowsToPages(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}))}
+ else{const t=await f.text();if(/\.csv$/i.test(f.name))pg=rowsToPages(parseCSV(t));
+  else if(t.trim()[0]=='{'){const j=JSON.parse(t);pg=(j.pages||[j]).map(p=>({...p,id:uid()}))}
+  else{const d=new DOMParser().parseFromString(t,'text/xml');for(const dg of d.querySelectorAll('diagram')){let g=dg.querySelector('mxGraphModel');if(!g&&dg.textContent.trim())g=new DOMParser().parseFromString(await inflate(dg.textContent),'text/xml');const p=g&&fromXML(g,dg.getAttribute('name')||'Halaman');if(p)pg.push(p)}}}}catch(x){console.error(x)}
+ if(!pg.length){toast('File tidak dapat dibaca atau formatnya tidak dikenali.');return}
+ if(S.demo)S.pages=[];S.pages.push(...pg);S.cur=S.pages.length-pg.length;sel=null;ms=new Set();commit();all();fit();toast(pg.length+' halaman diimpor')};
+// ===== penyimpanan bersama (db) =====
+const setSync=t=>{const e=$('#sync');if(e)e.textContent=t};
+const sched=()=>{if(!DB||!canW||ro)return;clearTimeout(st2);st2=setTimeout(flush,700)};
+const nk=o=>JSON.stringify(Object.keys(o).sort().map(k=>[k,o[k]])),meta=()=>({order:S.pages.map(p=>p.id),compact:!!S.compact,paper:S.paper||'A3',orient:S.orient||'landscape',tpl:JSON.stringify(S.tpl||[])});
+const dataToBlob=d=>{const h=d.split(',');const m=(h[0].match(/:(.*?);/)||[])[1]||'image/jpeg',bin=atob(h[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:m})};
+async function norm(){if(!AS)return false;let c2=false;const cache={};for(const p of S.pages)for(const c of p.cards)if(c.photo&&c.photo.startsWith('data:')){try{const k=c.photo;cache[k]??='/_blob/'+(await AS.upload(dataToBlob(k))).id;c.photo=cache[k];c2=true}catch(e){}}return c2}
+function setRO(){ro=true;document.body.classList.add('ro');tool='select';sel=null;ms=new Set();setSync('👁 Hanya lihat · tersinkron');all()}
+let flushing=false,redoF=false,needM=false;
+async function flush(){if(!DB||!canW||ro)return;if(flushing){redoF=true;return}flushing=true;try{
+ if(await norm()){last=JSON.stringify(S);try{localStorage.setItem('cb1',last)}catch(e){}render()}
+ const m=meta(),mj=nk(m);
+ for(const p of S.pages){const j=JSON.stringify(p);if(saved[p.id]!==j){const pv=saved[p.id];saved[p.id]=j;try{await DB.doc('pages/'+p.id).set({json:j})}catch(x){saved[p.id]=pv;throw x}}}
+ for(const id of Object.keys(saved))if(id!='_m'&&!S.pages.some(p=>p.id==id)){await DB.doc('pages/'+id).delete();delete saved[id]}
+ if(saved._m!==mj){const pv=saved._m;saved._m=mj;try{await DB.doc('chart/project').set(m)}catch(x){saved._m=pv;throw x}}
+ setSync('● Tersinkron')}catch(e){console.error(e);if(e&&e.code=='invalid_argument'&&wr===null)setRO();else{setSync('⚠ Gagal sinkron');toast('Gagal menyimpan ke data bersama ('+((e&&e.code)||'?')+'). Halaman mungkin terlalu besar.')}}
+ finally{flushing=false;if(redoF){redoF=false;flush()}else if(needM){needM=false;mergeRemote()}}}
+function mergeRemote(){if(flushing){needM=true;return}if(!gotM||!gotP||drag||pan||marq||drag2||drag3)return;const ord=RM.order||[],np=[];let chg=false;
+ ord.forEach(id=>{const lp=S.pages.find(p=>p.id==id);if(RP[id]==null){if(lp)np.push(lp);return}if(lp&&RP[id]===saved[id]){np.push(lp);return}if(!lp&&RP[id]===saved[id])return;saved[id]=RP[id];chg=true;np.push(JSON.parse(RP[id]))});
+ S.pages.forEach(p=>{if(!ord.includes(p.id)&&(saved[p.id]===undefined||RP[p.id]!=null))np.push(p)});
+ const mj=nk(RM);if(saved._m!==mj){saved._m=mj;chg=true;S.compact=RM.compact;S.paper=RM.paper;S.orient=RM.orient;try{S.tpl=JSON.parse(RM.tpl||'[]')}catch(e){}}
+ if(!np.length)np.push({id:uid(),name:'Halaman 1',H:900,lanes:[{id:uid(),name:'Lane',w:320}],cards:[],edges:[]});
+ if(!chg&&np.length==S.pages.length&&np.every((p,i)=>p===S.pages[i]))return;
+ const cid=P()&&P().id;S.pages=np;S.cur=Math.max(0,np.findIndex(p=>p.id==cid));delete S.demo;
+ const ids=new Set(np.flatMap(p=>p.cards.map(c=>c.id)));ms=new Set([...ms].filter(i=>ids.has(i)));if(sel&&sel.t=='c'&&!ms.has(sel.id))sel=null;
+ last=JSON.stringify(S);try{localStorage.setItem('cb1',last)}catch(e){}
+ render();tabs();if(!document.activeElement||!document.activeElement.closest('#pn'))panel();setSync(ro?'👁 Hanya lihat · tersinkron':'● Tersinkron')}
+async function initShared(){try{if(typeof claude=='undefined'){setSync('Lokal (browser ini)');return}
+ try{DLC=await claude.use('downloads')}catch(e){}
+ const u=await claude.use('user');if(u){wr=await u.can('data.write');canW=wr!==false}
+ DB=await claude.use('db');AS=await claude.use('assets');if(!DB){setSync('Lokal (browser ini)');return}
+ const er=e=>{console.error(e);setSync('⚠ Sinkron bermasalah')};
+ const g=await DB.doc('chart/project').get();
+ if(!g.exists){if(canW){setSync('Menyiapkan data bersama…');await flush()}else{S={cur:0,tpl:[],pages:[{id:uid(),name:'Belum ada chart bersama',H:600,lanes:[{id:uid(),name:'Lane',w:320}],cards:[],edges:[]}]};all()}}
+ if(!canW)setRO();else setSync('● Tersinkron');
+ DB.doc('chart/project').onSnapshot(s=>{if(s.exists){RM=s.data();gotM=true;mergeRemote()}},er);
+ DB.collection('pages').onSnapshot(q=>{q.docChanges().forEach(c=>{if(c.type=='removed')delete RP[c.doc.id];else RP[c.doc.id]=c.doc.data().json});gotP=true;mergeRemote()},er)
+ }catch(e){console.error(e);setSync('Lokal (browser ini)')}}
+new ResizeObserver(()=>render()).observe(svg);all();setTimeout(fit,50);initShared();
+</script></body></html>
