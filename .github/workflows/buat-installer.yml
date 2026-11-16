@@ -17,8 +17,27 @@ jobs:
 
       - name: Pasang Bahan dan Build Web
         run: |
-          npm install
-          npm run build
+          npm install --legacy-peer-deps
+          npx vite build --base=./
+
+      - name: Siapkan Jendela Aplikasi Desktop
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.main = 'electron-main.cjs';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            fs.writeFileSync('electron-main.cjs', \`
+              const { app, BrowserWindow } = require('electron');
+              const path = require('path');
+              app.whenReady().then(() => {
+                const win = new BrowserWindow({ width: 1200, height: 800 });
+                win.setMenuBarVisibility(false);
+                win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+              });
+              app.on('window-all-closed', () => app.quit());
+            \`);
+          "
 
       - name: Bungkus Jadi EXE
         run: |
