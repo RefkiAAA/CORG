@@ -1,0 +1,32 @@
+name: Buat Installer Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Ambil Kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pasang Bahan dan Build Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Bungkus Jadi EXE
+        run: |
+          npx electron-packager . AplikasiAI --platform=win32 --arch=x64 --out=hasil-app --overwrite
+          Compress-Archive -Path hasil-app\AplikasiAI-win32-x64\* -DestinationPath AplikasiAI-Windows.zip
+
+      - name: Simpan Hasil Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aplikasi-Windows-Siap-Pakai
+          path: AplikasiAI-Windows.zip
